@@ -1,0 +1,21 @@
+# Keep the image small + never ship secrets or scratch state.
+**/node_modules
+**/__pycache__
+**/.env
+.env
+_backup-pre-eval-*
+modular_pipeline/jobs
+modular_pipeline/study_logs
+App/src
+App/node_modules
+# Redundant in single-origin deploy (backend serves these from App/public):
+App/dist/data
+App/dist/videos
+App/dist/vibe.mp4
+# Ship ONLY the study clip — exclude every other processed clip's data + video
+# to keep the deploy image small.
+App/public/data/*
+!App/public/data/ce907eaa-6229-4d18-bff0-ff8c54bac048
+App/public/videos/*
+!App/public/videos/ce907eaa-6229-4d18-bff0-ff8c54bac048.mp4
+App/public/vibe.mp4

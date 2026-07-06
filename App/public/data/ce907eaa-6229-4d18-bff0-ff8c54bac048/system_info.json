@@ -1,0 +1,28 @@
+{
+  "video_id": "ce907eaa-6229-4d18-bff0-ff8c54bac048",
+  "processing": {
+    "model": "gpt-4.1",
+    "image_detail": "low",
+    "chunk_sizes": [
+      120
+    ]
+  },
+  "input": {
+    "num_frames": 70
+  },
+  "output": {
+    "num_entities": 2,
+    "num_scenes": 12,
+    "num_chunks": 1
+  },
+  "tokens": {
+    "input_tokens": 9608,
+    "output_tokens": 2270,
+    "total_tokens": 11878
+  },
+  "quality": {
+    "avg_ad_words": 27.83,
+    "avg_duplicate_ads": 0.0
+  },
+  "status": "completed"
+}

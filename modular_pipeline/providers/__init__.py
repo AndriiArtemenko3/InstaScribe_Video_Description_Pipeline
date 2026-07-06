@@ -16,9 +16,18 @@ from .base import (
     TTSProvider,
     VisionProvider,
 )
-from .factory import get_text_provider, get_tts_provider, get_vision_provider
+from .factory import (
+    VALID_BACKENDS,
+    active_backend,
+    get_text_provider,
+    get_tts_provider,
+    get_vision_provider,
+    provider_status,
+    set_active_backend,
+)
 
 __all__ = [
+    "VALID_BACKENDS",
     "CaptionResult",
     "Frame",
     "ProviderError",
@@ -26,7 +35,10 @@ __all__ = [
     "TextResult",
     "TTSProvider",
     "VisionProvider",
+    "active_backend",
     "get_text_provider",
     "get_tts_provider",
     "get_vision_provider",
+    "provider_status",
+    "set_active_backend",
 ]

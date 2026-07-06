@@ -26,6 +26,12 @@ import storage
 from flask import Flask, jsonify, request, send_file, send_from_directory
 from flask_cors import CORS
 from logging_config import configure_logging
+from providers import (
+    VALID_BACKENDS,
+    active_backend,
+    provider_status,
+    set_active_backend,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -100,10 +106,14 @@ def create_job():
         )
     )
 
-    # Launch run_job.py as a non-blocking subprocess.
+    # Launch run_job.py as a non-blocking subprocess, pinned to the active model
+    # backend (the in-app picker / INSTASCRIBE_BACKEND).
+    job_env = dict(os.environ)
+    job_env["INSTASCRIBE_BACKEND"] = active_backend()
     subprocess.Popen(
         [storage.PYTHON, str(storage.SERVER_DIR / "run_job.py"), job_id, str(settings_path)],
         cwd=str(storage.SERVER_DIR),
+        env=job_env,
         stdout=subprocess.DEVNULL,
         stderr=open(str(jdir / "stderr.log"), "w"),
     )
@@ -748,6 +758,27 @@ def study_config():
             "questionnaireParam": os.environ.get("STUDY_QUESTIONNAIRE_PARAM", "session"),
         }
     )
+
+
+# ─── GET/POST /api/providers ──────────────────────────────────────────────────
+
+
+@app.get("/api/providers")
+def get_providers():
+    """Backends the app can switch to, with per-backend readiness (API keys stay
+    in .env — never returned here) and the currently active one."""
+    return jsonify({"backends": provider_status(), "current": active_backend()})
+
+
+@app.post("/api/providers")
+def set_providers():
+    body = request.get_json(silent=True) or {}
+    backend = (body.get("backend") or "").strip().lower()
+    if backend not in VALID_BACKENDS:
+        return jsonify({"error": f"unknown backend: {backend!r}"}), 400
+    set_active_backend(backend)
+    logger.info("model backend switched to %s via /api/providers", backend)
+    return jsonify({"backends": provider_status(), "current": active_backend()})
 
 
 # ─── Static serving (single-origin deploy: backend also serves the SPA) ───────

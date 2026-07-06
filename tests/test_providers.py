@@ -11,8 +11,11 @@ _ENV_KEYS = ("INSTASCRIBE_BACKEND", "VISION_PROVIDER", "TEXT_PROVIDER", "TTS_PRO
 
 @pytest.fixture
 def clean_env(monkeypatch):
+    import providers.factory as factory
+
     for k in _ENV_KEYS:
         monkeypatch.delenv(k, raising=False)
+    monkeypatch.setattr(factory, "_OVERRIDE", None)  # reset the runtime picker between tests
     return monkeypatch
 
 
@@ -72,6 +75,30 @@ def test_selecting_cloud_backends_needs_no_sdk_or_key(clean_env):
     assert get_vision_provider().name == "anthropic"
     clean_env.setenv("VISION_PROVIDER", "gemini")
     assert get_vision_provider().name == "gemini"
+
+
+def test_runtime_backend_override(clean_env):
+    from providers import active_backend, set_active_backend
+
+    assert active_backend() == "openai"
+    set_active_backend("gemini")
+    assert active_backend() == "gemini"
+    assert get_vision_provider().name == "gemini"  # the picker beats the env default
+
+
+def test_set_active_backend_rejects_unknown(clean_env):
+    from providers import set_active_backend
+
+    with pytest.raises(ValueError):
+        set_active_backend("bogus")
+
+
+def test_provider_status_reports_all_backends(clean_env):
+    from providers import provider_status
+
+    status = provider_status()
+    assert {s["id"] for s in status} == {"openai", "anthropic", "gemini", "local", "fake"}
+    assert next(s for s in status if s["id"] == "fake")["ready"] is True
 
 
 def test_unknown_backend_raises(clean_env):

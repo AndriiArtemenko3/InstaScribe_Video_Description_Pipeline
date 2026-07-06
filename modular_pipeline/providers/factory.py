@@ -22,9 +22,34 @@ from .base import TextProvider, TTSProvider, VisionProvider
 # `local` is the friendly umbrella name; vision + text under it run on Ollama.
 _ALIASES = {"local": "ollama"}
 
+VALID_BACKENDS = ("openai", "anthropic", "gemini", "local", "fake")
+
+# Runtime backend override, set from the app's Settings picker (POST /api/providers).
+# None means fall back to the INSTASCRIBE_BACKEND env var / default.
+_OVERRIDE: str | None = None
+
+
+def set_active_backend(name: str) -> None:
+    """Set the runtime backend (the in-app picker). Raises on an unknown name."""
+    global _OVERRIDE
+    normalized = (name or "").strip().lower()
+    if normalized not in VALID_BACKENDS:
+        raise ValueError(f"Unknown backend: {name!r} (want {'|'.join(VALID_BACKENDS)})")
+    _OVERRIDE = normalized
+
+
+def active_backend() -> str:
+    """The effective backend the UI shows and new jobs run under (friendly name)."""
+    return _OVERRIDE or os.getenv("INSTASCRIBE_BACKEND") or "openai"
+
 
 def _resolve(capability_env: str, default_backend: str = "openai") -> str:
-    backend = os.getenv(capability_env) or os.getenv("INSTASCRIBE_BACKEND") or default_backend
+    backend = (
+        os.getenv(capability_env)
+        or _OVERRIDE
+        or os.getenv("INSTASCRIBE_BACKEND")
+        or default_backend
+    )
     backend = backend.strip().lower()
     return _ALIASES.get(backend, backend)
 
@@ -110,3 +135,68 @@ def _model(capability_env: str, backend_env: str, default: str) -> str:
     # Per-capability override (VISION_MODEL / TEXT_MODEL) wins, then the per-backend
     # override (ANTHROPIC_MODEL / GEMINI_MODEL), then the default.
     return os.getenv(capability_env) or os.getenv(backend_env) or default
+
+
+def provider_status() -> list[dict[str, object]]:
+    """Per-backend readiness for the in-app picker. Reads env for keys (which stay
+    server-side — no key value is ever returned) and probes Ollama for the local
+    backend."""
+    import importlib.util
+    import socket
+    import urllib.parse
+    from pathlib import Path
+
+    from dotenv import load_dotenv
+
+    load_dotenv(Path(__file__).resolve().parents[2] / ".env")  # app-root .env holds the keys
+
+    def _reachable(url: str) -> bool:
+        try:
+            parts = urllib.parse.urlparse(url)
+            with socket.create_connection(
+                (parts.hostname or "localhost", parts.port or 11434), timeout=0.4
+            ):
+                return True
+        except OSError:
+            return False
+
+    openai_ready = bool(os.getenv("OPENAI_API_KEY") or os.getenv("OPENAI_BASE_URL"))
+    anthropic_key = bool(os.getenv("ANTHROPIC_API_KEY"))
+    anthropic_sdk = importlib.util.find_spec("anthropic") is not None
+    anthropic_ready = anthropic_key and anthropic_sdk
+    gemini_ready = bool(os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"))
+    local_ready = _reachable(os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1"))
+
+    return [
+        {
+            "id": "openai",
+            "label": "OpenAI",
+            "ready": openai_ready,
+            "reason": "" if openai_ready else "Set OPENAI_API_KEY in .env",
+        },
+        {
+            "id": "anthropic",
+            "label": "Claude",
+            "ready": anthropic_ready,
+            "reason": ""
+            if anthropic_ready
+            else (
+                "Set ANTHROPIC_API_KEY in .env"
+                if not anthropic_key
+                else "pip install -r requirements-providers.txt"
+            ),
+        },
+        {
+            "id": "gemini",
+            "label": "Gemini",
+            "ready": gemini_ready,
+            "reason": "" if gemini_ready else "Set GEMINI_API_KEY in .env",
+        },
+        {
+            "id": "local",
+            "label": "Local (Ollama + Kokoro)",
+            "ready": local_ready,
+            "reason": "" if local_ready else "Start Ollama (ollama serve) and pull the models",
+        },
+        {"id": "fake", "label": "Fake (fixtures, no key)", "ready": True, "reason": ""},
+    ]

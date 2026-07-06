@@ -7,6 +7,7 @@ import {
   WifiOff, Coins, LogOut, BookOpen,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ProviderPicker } from '../components/ProviderPicker'
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? 'http://localhost:8765'
 const APP_VERSION = '0.1.0-dev'
@@ -192,6 +193,13 @@ export default function SettingsPage() {
                   ? <span className="text-success-400">set</span>
                   : <span className="text-neutral-400">default</span>}
               />
+            </Card>
+          </section>
+
+          <section className="flex flex-col gap-4">
+            <SectionHeading>Model provider</SectionHeading>
+            <Card>
+              <ProviderPicker />
             </Card>
           </section>
 

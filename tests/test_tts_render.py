@@ -3,14 +3,16 @@
 from pathlib import Path
 
 import tts_render as T
+from providers.openai_provider import OpenAITTSProvider
 
 
-def test_normalise_voice():
-    assert T._normalise_voice("NOVA") == "nova"
-    assert T._normalise_voice(" Onyx ") == "onyx"
-    assert T._normalise_voice("bogus") == "onyx"  # unknown → default
-    assert T._normalise_voice(None) == "onyx"
-    assert T._normalise_voice("echo") == "echo"
+def test_openai_tts_voice_normalisation():
+    tts = OpenAITTSProvider()
+    assert tts._voice("NOVA") == "nova"
+    assert tts._voice(" Onyx ") == "onyx"
+    assert tts._voice("bogus") == "onyx"  # unknown → default
+    assert tts._voice(None) == "onyx"
+    assert tts._voice("echo") == "echo"
 
 
 def test_clamp_speed():

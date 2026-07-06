@@ -22,11 +22,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from dotenv import load_dotenv
-from openai import OpenAI
 
 load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env")
 
-TTS_MODEL = "tts-1-hd"
 TARGET_LUFS = -23.0  # EBU R128 broadcast standard
 DUCK_THRESHOLD = -35.0  # gaps louder than this get ducking
 DUCK_LEVEL = 0.30  # 30% volume of the source during narration
@@ -48,22 +46,12 @@ class AdBlock:
     apply_duck: bool
 
 
-def _normalise_voice(voice: str | None) -> str:
-    v = (voice or "onyx").strip().lower()
-    return v if v in {"onyx", "nova", "alloy", "shimmer", "echo", "fable"} else "onyx"
-
-
 def render_line(text: str, voice: str, out_path: Path) -> Path:
-    """Render a single AD line via OpenAI tts-1-hd. Writes mp3 to out_path."""
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    client = OpenAI()
-    response = client.audio.speech.create(
-        model=TTS_MODEL,
-        voice=_normalise_voice(voice),
-        input=text,
-    )
-    response.stream_to_file(out_path)
-    return out_path
+    """Render a single AD line to mp3 via the configured TTS provider (OpenAI
+    tts-1-hd by default; Kokoro when TTS_PROVIDER=local). Writes to out_path."""
+    from providers import get_tts_provider
+
+    return get_tts_provider().synthesize(text=text, voice=voice, out_path=out_path)
 
 
 def get_duration(path: Path) -> float:

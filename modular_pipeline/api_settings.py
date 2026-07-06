@@ -20,10 +20,14 @@ def _bump():
 
 def get_client() -> OpenAI:
     load_dotenv()
+    base_url = os.getenv("OPENAI_BASE_URL")  # point at Ollama/vLLM/LM Studio/OpenRouter
     key = os.getenv("OPENAI_API_KEY")
     if not key:
-        raise RuntimeError("Missing OPENAI_API_KEY")
-    return OpenAI(api_key=key)
+        if base_url:
+            key = "not-needed"  # local OpenAI-compatible servers ignore the key
+        else:
+            raise RuntimeError("Missing OPENAI_API_KEY")
+    return OpenAI(api_key=key, base_url=base_url or None)
 
 
 def safe_create_response(client: OpenAI, **kwargs):

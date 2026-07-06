@@ -257,7 +257,6 @@ def patch_job(job_id: str):
 
 # ─── POST /api/jobs/<id>/smart-fill ───────────────────────────────────────────
 
-SMARTFILL_MODEL = "gpt-4o-mini"
 # AD speech is typically ~150 wpm ≈ 2.5 wps; 2.3 leaves a little headroom in the gap.
 SMARTFILL_WPS = 2.3
 
@@ -300,22 +299,16 @@ def smart_fill(job_id: str):
 
     try:
         sys.path.insert(0, str(storage.SERVER_DIR))
-        from api_settings import get_client
+        from providers import get_text_provider
 
-        client = get_client()
-        completion = client.chat.completions.create(
-            model=SMARTFILL_MODEL,
-            messages=[
-                {"role": "system", "content": system_msg},
-                {"role": "user", "content": user_msg},
-            ],
-            temperature=0.4,
-            max_tokens=400,
+        result = get_text_provider().rewrite(
+            system=system_msg, user=user_msg, temperature=0.4, max_tokens=400
         )
-        new_text = (completion.choices[0].message.content or "").strip()
+        new_text = result.text.strip()
         if len(new_text) >= 2 and new_text[0] in {'"', "'"} and new_text[-1] == new_text[0]:
             new_text = new_text[1:-1].strip()
-        tokens = completion.usage.total_tokens if completion.usage else 0
+        tokens = result.tokens
+        model_used = result.model
     except Exception as exc:
         logger.exception("smart-fill failed")
         return jsonify({"error": f"smart-fill failed: {exc}"}), 500
@@ -327,7 +320,7 @@ def smart_fill(job_id: str):
             "target_words": target_words,
             "estimated_secs": round(len(new_text.split()) / SMARTFILL_WPS, 2),
             "tokens_used": tokens,
-            "model": SMARTFILL_MODEL,
+            "model": model_used,
         }
     )
 

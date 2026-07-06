@@ -36,7 +36,10 @@ video → scene segmentation → frame sampling → per-scene draft (gpt-4.1 vis
       → text-to-speech (tts-1-hd) → loudness-matched ffmpeg mix → described video
 ```
 
-Full diagram and the deploy model are in [docs/architecture.md](./docs/architecture.md).
+The vision, rewrite, and speech steps run through a provider interface: OpenAI by
+default, or fully local with Ollama (Qwen2.5-VL) plus Kokoro and no API key. Full
+diagram and the deploy model are in [docs/architecture.md](./docs/architecture.md);
+the local setup and its quality tradeoff are in [docs/local-models.md](./docs/local-models.md).
 
 Decisions that shaped it:
 
@@ -53,24 +56,39 @@ Decisions that shaped it:
 
 ## Quick start
 
+### Try it in one command (no API key)
+
+```bash
+make demo
+```
+
+Builds and serves the browser app on a committed sample clip. Every model step is
+served from baked fixtures, so it needs no key, no backend, and nothing beyond
+Node. Open the printed URL and edit a real description in the editor.
+
+### Run the full pipeline on your own video
+
 Prerequisites: Python 3.12, Node 20+, and ffmpeg on your PATH (`brew install ffmpeg`).
 
 ```bash
-# 1. Build the web app
-cd App && npm install && npm run build && cd ..
-
-# 2. Set up the backend
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt          # full pipeline (vision, audio, TTS)
-cp .env.example .env                      # then add your OPENAI_API_KEY
-
-# 3. Run the single-origin server
-python modular_pipeline/server.py         # serves the app + API at :8765
+make install                              # web deps + a .venv with the pipeline
+cp .env.example .env                      # pick a model backend (below)
+make server                               # single-origin app + API at :8765
 ```
 
-Open http://localhost:8765 and upload a short clip. The pipeline drafts a
-description for every scene; edit and approve in the browser, preview the mixed
-audio, then export the described video.
+Open http://localhost:8765, upload a short clip, edit and approve each
+description, preview the mixed audio, then export the described video.
+
+Pick a model backend in `.env`:
+
+- **OpenAI** (default, best quality) — set `OPENAI_API_KEY`.
+- **Fully local, no key** — `INSTASCRIBE_BACKEND=local`. Install
+  [Ollama](https://ollama.com), pull `qwen2.5vl:7b` + `qwen2.5:7b`, and
+  `pip install -r requirements-local.txt` for local TTS.
+  See [docs/local-models.md](./docs/local-models.md).
+
+Vision, Smart Fill, and TTS each run through a provider interface, so the model
+behind them is a config change, not a code change.
 
 ## Evaluation and results
 
@@ -111,9 +129,10 @@ The work that made the tool usable lived in failures that only show up in real o
 
 ## Built with
 
-Python 3.12 · Flask · OpenAI API (gpt-4.1 vision, gpt-4o-mini, tts-1-hd) ·
-faster-whisper · silero-vad · ffmpeg · React 19 · Vite · TypeScript · Tailwind ·
-shadcn/ui · TanStack Query · Zustand · deployed on Fly.io.
+Python 3.12 · Flask · a pluggable model backend — OpenAI (gpt-4.1, gpt-4o-mini,
+tts-1-hd) or fully local (Ollama Qwen2.5-VL + Kokoro) · faster-whisper · silero-vad ·
+ffmpeg · React 19 · Vite · TypeScript · Tailwind · shadcn/ui · TanStack Query ·
+Zustand · deployed on Fly.io.
 
 ## Project layout
 

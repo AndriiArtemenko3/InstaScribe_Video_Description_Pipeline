@@ -4,8 +4,6 @@ import time
 from pathlib import Path
 from typing import Any
 
-import openai
-from api_settings import get_client, safe_create_response
 from audio_whisperx_pipeline import (
     calculate_ad_gaps,
     load_audio_events,
@@ -32,6 +30,7 @@ from frames import FrameItem, chunk_frames, load_frames
 from memory import compress_memory, load_memory, normalize_text, update_memory
 from normalisation import demo_manual_override, export_app_state
 from prompts import build_developer_prompt, build_user_text
+from providers import Frame, ProviderError, VisionProvider, get_vision_provider
 from schemas import SCENE_SCHEMA
 
 
@@ -80,80 +79,51 @@ def estimate_quality_proxy(chunk_output: dict[str, Any]) -> dict[str, Any]:
 
 
 def analyze_chunk(
-    client: Any,
+    vision: VisionProvider,
     chunk_id: int,
     chunk: list[FrameItem],
     memory: dict[str, Any],
-    model: str = MODEL,
     image_detail: str = IMAGE_DETAIL,
 ) -> dict[str, Any]:
     memory_context = compress_memory(memory)
     user_text = build_user_text(chunk_id, chunk, memory_context, USER_CUSTOM_PROMPT)
-
-    content: list[dict[str, Any]] = [{"type": "input_text", "text": user_text}]
-
-    for local_idx, frame in enumerate(chunk):
-        content.append(
-            {
-                "type": "input_text",
-                "text": (
-                    f"FRAME {local_idx}\n"
-                    f"global_frame_index={frame.index}\n"
-                    f"timestamp={frame.timestamp:.1f}s"
-                ),
-            }
-        )
-        content.append(
-            {
-                "type": "input_image",
-                "image_url": f"data:image/jpeg;base64,{encode_image(frame.path)}",
-                "detail": image_detail,
-            }
-        )
+    frames = [
+        Frame(index=frame.index, timestamp=frame.timestamp, image_b64=encode_image(frame.path))
+        for frame in chunk
+    ]
 
     MAX_RETRIES = 3
     RETRY_DELAYS = [1, 2, 4]
 
-    parsed: dict[str, Any] = {}
+    result = None
     for attempt in range(MAX_RETRIES):
         try:
-            response = safe_create_response(
-                client,
-                model=model,
-                input=[
-                    {
-                        "role": "developer",
-                        "content": [{"type": "input_text", "text": build_developer_prompt()}],
-                    },
-                    {"role": "user", "content": content},
-                ],
-                text={
-                    "format": {
-                        "type": "json_schema",
-                        "name": SCENE_SCHEMA["name"],
-                        "schema": SCENE_SCHEMA["schema"],
-                        "strict": SCENE_SCHEMA["strict"],
-                    }
-                },
+            result = vision.caption_chunk(
+                developer_prompt=build_developer_prompt(),
+                user_text=user_text,
+                frames=frames,
+                schema=SCENE_SCHEMA,
+                image_detail=image_detail,
             )
-            parsed = json.loads(response.output_text)
             break
-        except (openai.RateLimitError, openai.APIConnectionError, openai.APITimeoutError) as e:
-            if attempt < MAX_RETRIES - 1:
+        except ProviderError as e:
+            if e.retryable and attempt < MAX_RETRIES - 1:
                 delay = RETRY_DELAYS[attempt]
                 print(
-                    f"[chunk {chunk_id}] API error ({type(e).__name__}), retrying in {delay}s... (attempt {attempt + 1}/{MAX_RETRIES})"
+                    f"[chunk {chunk_id}] provider error ({e}), retrying in {delay}s... "
+                    f"(attempt {attempt + 1}/{MAX_RETRIES})"
                 )
                 time.sleep(delay)
             else:
                 raise RuntimeError(
-                    f"[chunk {chunk_id}] API call failed after {MAX_RETRIES} attempts: {e}"
+                    f"[chunk {chunk_id}] caption call failed after {attempt + 1} attempts: {e}"
                 ) from e
         except json.JSONDecodeError as e:
             if attempt < MAX_RETRIES - 1:
                 delay = RETRY_DELAYS[attempt]
                 print(
-                    f"[chunk {chunk_id}] JSON parse error, retrying in {delay}s... (attempt {attempt + 1}/{MAX_RETRIES})"
+                    f"[chunk {chunk_id}] JSON parse error, retrying in {delay}s... "
+                    f"(attempt {attempt + 1}/{MAX_RETRIES})"
                 )
                 time.sleep(delay)
             else:
@@ -161,21 +131,28 @@ def analyze_chunk(
                     f"[chunk {chunk_id}] JSON parse failed after {MAX_RETRIES} attempts: {e}"
                 ) from e
 
-    usage = getattr(response, "usage", None)
-    if usage is not None:
+    if result is None:  # the loop either breaks with a result or raises
+        raise RuntimeError(f"[chunk {chunk_id}] caption produced no result")
+
+    parsed = result.data
+    if result.usage is not None:
         parsed["_usage"] = {
-            "input_tokens": getattr(usage, "input_tokens", None),
-            "output_tokens": getattr(usage, "output_tokens", None),
-            "total_tokens": getattr(usage, "total_tokens", None),
+            "input_tokens": result.usage.get("input_tokens"),
+            "output_tokens": result.usage.get("output_tokens"),
+            "total_tokens": result.usage.get("total_tokens"),
         }
 
-    parsed["_meta"] = {"model": model, "image_detail": image_detail, "chunk_size": len(chunk)}
+    parsed["_meta"] = {
+        "model": result.model,
+        "image_detail": image_detail,
+        "chunk_size": len(chunk),
+    }
 
     return parsed
 
 
 def run_for_chunk_size(
-    client: Any,
+    vision: VisionProvider,
     frames: list[FrameItem],
     chunk_size: int,
 ) -> dict[str, Any]:
@@ -199,7 +176,7 @@ def run_for_chunk_size(
             chunk_output = json.loads(out_file.read_text())
         else:
             chunk_output = analyze_chunk(
-                client=client,
+                vision=vision,
                 chunk_id=chunk_id,
                 chunk=chunk,
                 memory=memory,
@@ -290,7 +267,7 @@ def build_comparison_report(summaries: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def main() -> None:
-    client = get_client()
+    vision = get_vision_provider()
 
     PROJECT_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -329,7 +306,7 @@ def main() -> None:
     summaries = []
     for chunk_size in CHUNK_SIZES:
         print(f"\n=== Running chunk size: {chunk_size} ===")
-        summary = run_for_chunk_size(client, frames, chunk_size)
+        summary = run_for_chunk_size(vision, frames, chunk_size)
         summaries.append(summary)
 
     comparison = build_comparison_report(summaries)

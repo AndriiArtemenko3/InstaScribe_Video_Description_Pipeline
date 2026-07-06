@@ -24,6 +24,17 @@ flowchart TD
 Each stage writes plain JSON to the project directory, so the editor reads static
 files and the API stays thin.
 
+## Model providers
+
+The three model-backed stages (vision drafting, Smart Fill rewrite, TTS) call a
+small interface in `modular_pipeline/providers/`, never a vendor SDK. A factory
+selects the backend at runtime from `INSTASCRIBE_BACKEND` (or the per-capability
+`VISION_PROVIDER` / `TEXT_PROVIDER` / `TTS_PROVIDER`): `openai` (default), `local`
+(Ollama for vision + text, Kokoro for TTS), or `fake` (deterministic, keyless —
+used by the tests and the demo). Swapping a model is a config change. The mermaid
+above shows the default OpenAI path; setup and the quality tradeoff of the local
+models are in [local-models.md](./local-models.md).
+
 ## Single-origin serving
 
 The Flask server (`modular_pipeline/server.py`) serves four things from one origin:

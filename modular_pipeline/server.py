@@ -613,7 +613,7 @@ def get_evaluation(job_id: str):
 # its own copy of the clip's data, keyed by the anonymous session UUID, so a rename
 # or edit never mutates the shared canonical draft or another participant's session.
 
-STUDY_SOURCE_JOB = os.environ.get("STUDY_SOURCE_JOB", "ce907eaa-6229-4d18-bff0-ff8c54bac048")
+STUDY_SOURCE_JOB = os.environ.get("STUDY_SOURCE_JOB", "sintel-blender-cc")
 # Override with a mounted volume path in deploy to persist logs across restarts.
 STUDY_LOGS_DIR = storage.SERVER_DIR / "study_logs"
 if os.environ.get("STUDY_LOGS_DIR"):

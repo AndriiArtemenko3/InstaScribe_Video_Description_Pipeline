@@ -146,6 +146,13 @@ docs/               architecture and evaluation notes
 tests/              pytest (pipeline) + vitest lives under App/
 ```
 
+## Media
+
+The bundled demo clip is **Sintel** — © Blender Foundation,
+[durian.blender.org](https://durian.blender.org), licensed
+[CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Full attribution:
+[THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
+
 ## Licence
 
 [MIT](./LICENSE)

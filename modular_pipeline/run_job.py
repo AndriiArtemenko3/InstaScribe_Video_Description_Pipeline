@@ -90,7 +90,6 @@ if lang:
 
 sys.path.insert(0, str(PIPELINE_DIR))
 
-from api_settings import get_client
 from config import (
     CHUNK_SIZES,
     IMAGE_DETAIL,
@@ -112,6 +111,7 @@ from pipeline import (
     safe_json_dump,
     validate_chunk_character_ids,
 )
+from providers import get_vision_provider
 
 # ─── Status helpers ───────────────────────────────────────────────────────────
 
@@ -279,7 +279,7 @@ def main() -> None:
     write_status("processing", 25, "analyzing_frames")
     print(f"[{job_id}] Running LLM analysis…")
 
-    client = get_client()
+    vision = get_vision_provider()
     chunk_size = CHUNK_SIZES[0]
     chunks = chunk_frames(frames, chunk_size)
     total = len(chunks)
@@ -297,7 +297,7 @@ def main() -> None:
 
     for chunk_id, chunk in enumerate(chunks):
         print(f"[{job_id}] chunk {chunk_id + 1}/{total}…")
-        chunk_output = analyze_chunk(client, chunk_id, chunk, memory)
+        chunk_output = analyze_chunk(vision, chunk_id, chunk, memory)
         safe_json_dump(chunks_dir / f"chunk_{chunk_id:03d}.json", chunk_output)
 
         orphaned = validate_chunk_character_ids(chunk_output)

@@ -52,15 +52,13 @@ SESSION_SCRATCHPAD.md
 **/.DS_Store
 
 # Media: track ONLY the demo fixture; exclude everything else.
-# App/public/videos/ and the non-fixture App/public/data/ dirs were the leak
-# vector (previously uncovered), so `git add -A` would have staged
-# copyright-derived renders. Deny-all, then re-allow the single fixture that
-# seeds the README hero and the zero-key demo.
-# NOTE: re-bake the ce907eaa clip from a CC-BY / public-domain source before push.
+# App/public/videos/ and the non-fixture App/public/data/ dirs would otherwise
+# stage copyright-derived renders. Deny-all, then re-allow the single fixture —
+# the Sintel (CC BY 3.0) demo clip; see THIRD_PARTY_NOTICES.md.
 App/public/videos/*
-!App/public/videos/ce907eaa-6229-4d18-bff0-ff8c54bac048.mp4
+!App/public/videos/sintel-blender-cc.mp4
 App/public/data/*/
-!App/public/data/ce907eaa-6229-4d18-bff0-ff8c54bac048/
+!App/public/data/sintel-blender-cc/
 App/public/vibe.mp4
 
 # Root-level loose media / coursework artifacts (kept locally, out of the repo)

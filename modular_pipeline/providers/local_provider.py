@@ -1,28 +1,29 @@
 """Local, keyless providers.
 
   * Vision and text run on Ollama through its OpenAI-compatible endpoint
-    (OLLAMA_BASE_URL, default http://localhost:11434/v1). Install Ollama, then:
+    (OLLAMA_BASE_URL, default http://localhost:11434/v1), via the shared `_compat`
+    helper. Install Ollama, then:
         ollama pull qwen2.5vl:7b     # vision (scene captioning)
         ollama pull qwen2.5:7b       # text  (Smart Fill rewrite)
   * TTS runs on Kokoro (kokoro-82M, Apache-2.0) in-process; the ~330MB weights
     download once on first use. Requires `pip install -r requirements-local.txt`.
 
-Quality trails the hosted OpenAI models on ambiguous frames; the human
-edit-and-approve loop is the intended mitigation. See docs/local-models.md.
+Quality trails the hosted models on ambiguous frames; the human edit-and-approve
+loop is the intended mitigation. See docs/local-models.md.
 """
 
 from __future__ import annotations
 
-import json
 import os
 from pathlib import Path
 from typing import Any
 
 import openai
 
+from . import _compat
 from .base import CaptionResult, ProviderError, TextResult
 
-_RETRYABLE = (openai.APIConnectionError, openai.APITimeoutError, openai.RateLimitError)
+_OLLAMA_HINT = "Is `ollama serve` running and OLLAMA_BASE_URL correct?"
 
 
 def _ollama_client() -> openai.OpenAI:
@@ -30,15 +31,6 @@ def _ollama_client() -> openai.OpenAI:
         base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1"),
         api_key=os.getenv("OLLAMA_API_KEY", "ollama"),  # Ollama ignores the key
     )
-
-
-def _wrap(exc: Exception) -> ProviderError:
-    if isinstance(exc, openai.APIConnectionError):
-        return ProviderError(
-            f"Cannot reach Ollama — is `ollama serve` running and OLLAMA_BASE_URL correct? ({exc})",
-            retryable=True,
-        )
-    return ProviderError(f"{type(exc).__name__}: {exc}", retryable=isinstance(exc, _RETRYABLE))
 
 
 class OllamaVisionProvider:
@@ -50,47 +42,16 @@ class OllamaVisionProvider:
     def caption_chunk(
         self, *, developer_prompt, user_text, frames, schema, image_detail="low"
     ) -> CaptionResult:
-        client = _ollama_client()
-        content: list[dict[str, Any]] = [{"type": "text", "text": user_text}]
-        for local_idx, f in enumerate(frames):
-            content.append(
-                {
-                    "type": "text",
-                    "text": (
-                        f"FRAME {local_idx}\n"
-                        f"global_frame_index={f.index}\n"
-                        f"timestamp={f.timestamp:.1f}s"
-                    ),
-                }
-            )
-            content.append(
-                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{f.image_b64}"}}
-            )
-        try:
-            completion = client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": developer_prompt},
-                    {"role": "user", "content": content},
-                ],
-                response_format={
-                    "type": "json_schema",
-                    "json_schema": {
-                        "name": schema["name"],
-                        "schema": schema["schema"],
-                        "strict": schema.get("strict", True),
-                    },
-                },
-                temperature=0,
-            )
-        except openai.OpenAIError as exc:
-            raise _wrap(exc) from exc
-
-        raw = completion.choices[0].message.content or "{}"
-        data = json.loads(raw)  # JSONDecodeError -> caller retries
-        usage = getattr(completion, "usage", None)
-        usage_d = {"total_tokens": getattr(usage, "total_tokens", None)} if usage else None
-        return CaptionResult(data=data, model=self.model, usage=usage_d)
+        return _compat.caption_chunk(
+            _ollama_client(),
+            self.model,
+            developer_prompt=developer_prompt,
+            user_text=user_text,
+            frames=frames,
+            schema=schema,
+            service="Ollama",
+            hint=_OLLAMA_HINT,
+        )
 
 
 class OllamaTextProvider:
@@ -100,23 +61,16 @@ class OllamaTextProvider:
         self.model = model
 
     def rewrite(self, *, system, user, temperature=0.4, max_tokens=400) -> TextResult:
-        client = _ollama_client()
-        try:
-            completion = client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": user},
-                ],
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
-        except openai.OpenAIError as exc:
-            raise _wrap(exc) from exc
-        text = (completion.choices[0].message.content or "").strip()
-        usage = getattr(completion, "usage", None)
-        tokens = (getattr(usage, "total_tokens", 0) or 0) if usage else 0
-        return TextResult(text=text, model=self.model, tokens=tokens)
+        return _compat.rewrite(
+            _ollama_client(),
+            self.model,
+            system=system,
+            user=user,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            service="Ollama",
+            hint=_OLLAMA_HINT,
+        )
 
 
 # InstaScribe's provider-neutral voice names -> Kokoro voices (a = American English).

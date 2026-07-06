@@ -43,6 +43,37 @@ def test_per_capability_override_beats_global(clean_env):
     assert get_text_provider().name == "openai"  # untouched by the vision override
 
 
+def test_anthropic_backend_selected(clean_env):
+    clean_env.setenv("INSTASCRIBE_BACKEND", "anthropic")
+    assert get_vision_provider().name == "anthropic"
+    assert get_text_provider().name == "anthropic"
+    # Anthropic has no TTS of its own; it falls back to OpenAI TTS.
+    assert get_tts_provider().name == "openai"
+
+
+def test_gemini_backend_selected(clean_env):
+    clean_env.setenv("INSTASCRIBE_BACKEND", "gemini")
+    assert get_vision_provider().name == "gemini"
+    assert get_text_provider().name == "gemini"
+    assert get_tts_provider().name == "openai"
+
+
+def test_mixed_vision_and_text_backends(clean_env):
+    clean_env.setenv("VISION_PROVIDER", "anthropic")
+    clean_env.setenv("TEXT_PROVIDER", "gemini")
+    assert get_vision_provider().name == "anthropic"
+    assert get_text_provider().name == "gemini"
+
+
+def test_selecting_cloud_backends_needs_no_sdk_or_key(clean_env):
+    # Choosing anthropic/gemini must construct without importing their SDK or
+    # requiring a key — that only happens on the first real call.
+    clean_env.setenv("VISION_PROVIDER", "anthropic")
+    assert get_vision_provider().name == "anthropic"
+    clean_env.setenv("VISION_PROVIDER", "gemini")
+    assert get_vision_provider().name == "gemini"
+
+
 def test_unknown_backend_raises(clean_env):
     clean_env.setenv("VISION_PROVIDER", "bogus")
     with pytest.raises(ValueError):

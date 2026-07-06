@@ -29,9 +29,10 @@ files and the API stays thin.
 The three model-backed stages (vision drafting, Smart Fill rewrite, TTS) call a
 small interface in `modular_pipeline/providers/`, never a vendor SDK. A factory
 selects the backend at runtime from `INSTASCRIBE_BACKEND` (or the per-capability
-`VISION_PROVIDER` / `TEXT_PROVIDER` / `TTS_PROVIDER`): `openai` (default), `local`
-(Ollama for vision + text, Kokoro for TTS), or `fake` (deterministic, keyless —
-used by the tests and the demo). Swapping a model is a config change. The mermaid
+`VISION_PROVIDER` / `TEXT_PROVIDER` / `TTS_PROVIDER`): `openai` (default),
+`anthropic` (Claude), `gemini`, `local` (Ollama for vision + text, Kokoro for
+TTS), or `fake` (deterministic, keyless — used by the tests and the demo).
+Swapping a model is a config change. The mermaid
 above shows the default OpenAI path; setup and the quality tradeoff of the local
 models are in [local-models.md](./local-models.md).
 

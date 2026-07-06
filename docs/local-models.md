@@ -14,15 +14,22 @@ model is a config change, not a code change.
 
 Set one environment variable:
 
-| `INSTASCRIBE_BACKEND` | Vision | Text | TTS | Key? |
+| `INSTASCRIBE_BACKEND` | Vision | Text | TTS | Key |
 |---|---|---|---|---|
-| `openai` (default) | gpt-4.1 | gpt-4o-mini | tts-1-hd | yes |
-| `local` | Ollama qwen2.5vl:7b | Ollama qwen2.5:7b | Kokoro | no |
-| `fake` | placeholder JSON | deterministic trim | silence | no |
+| `openai` (default) | gpt-4.1 | gpt-4o-mini | tts-1-hd | `OPENAI_API_KEY` |
+| `anthropic` | claude-opus-4-8 | claude-opus-4-8 | → OpenAI TTS | `ANTHROPIC_API_KEY` |
+| `gemini` | gemini-2.5-flash | gemini-2.5-flash | → OpenAI TTS | `GEMINI_API_KEY` |
+| `local` | Ollama qwen2.5vl:7b | Ollama qwen2.5:7b | Kokoro | none |
+| `fake` | placeholder JSON | deterministic trim | silence | none |
 
 Override one stage at a time with `VISION_PROVIDER`, `TEXT_PROVIDER`, or
-`TTS_PROVIDER` (each `openai | local | fake`). For example, keep hosted vision
-but speak with local TTS: `VISION_PROVIDER=openai TTS_PROVIDER=local`.
+`TTS_PROVIDER` (each `openai | anthropic | gemini | local | fake`). For example,
+run Claude vision but speak with a keyless local voice:
+`VISION_PROVIDER=anthropic TTS_PROVIDER=local`.
+
+`anthropic` and `gemini` cover vision + text only; their TTS falls back to OpenAI
+(so an OpenAI key is still needed for speech) unless you set `TTS_PROVIDER=local`
+for keyless Kokoro. `fake` makes no network call and needs no model.
 
 `fake` makes no network call and needs no model; it powers the test suite and a
 keyless server smoke run.
@@ -49,6 +56,22 @@ keyless server smoke run.
    ```
 
 The pipeline now runs end to end with no key and no data leaving the machine.
+
+## Cloud alternatives: Claude and Gemini
+
+Set `INSTASCRIBE_BACKEND=anthropic` or `gemini` (or the per-capability
+`VISION_PROVIDER` / `TEXT_PROVIDER`).
+
+- **Claude** uses the official `anthropic` SDK (`pip install -r requirements-providers.txt`,
+  `ANTHROPIC_API_KEY`). Scene captioning gets schema-valid JSON through a strict
+  tool call; the Smart Fill rewrite is a plain message. Default `claude-opus-4-8`;
+  set `ANTHROPIC_MODEL` (`claude-haiku-4-5` is a cheaper rewrite).
+- **Gemini** needs no extra package — it reuses the `openai` client against
+  Gemini's OpenAI-compatibility endpoint (`GEMINI_API_KEY`, default
+  `gemini-2.5-flash`, set `GEMINI_MODEL`). The same `_compat` code path also
+  serves Ollama, vLLM, LM Studio, and OpenRouter.
+
+Neither ships TTS here, so speech uses OpenAI TTS unless you set `TTS_PROVIDER=local`.
 
 ## Model choices and the quality tradeoff
 

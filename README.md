@@ -37,9 +37,10 @@ video → scene segmentation → frame sampling → per-scene draft (gpt-4.1 vis
 ```
 
 The vision, rewrite, and speech steps run through a provider interface: OpenAI by
-default, or fully local with Ollama (Qwen2.5-VL) plus Kokoro and no API key. Full
-diagram and the deploy model are in [docs/architecture.md](./docs/architecture.md);
-the local setup and its quality tradeoff are in [docs/local-models.md](./docs/local-models.md).
+default, Claude or Gemini with a key, or fully local with Ollama (Qwen2.5-VL) plus
+Kokoro and no API key at all. Full diagram and the deploy model are in
+[docs/architecture.md](./docs/architecture.md); provider setup and the local-quality
+tradeoff are in [docs/local-models.md](./docs/local-models.md).
 
 Decisions that shaped it:
 
@@ -79,16 +80,18 @@ make server                               # single-origin app + API at :8765
 Open http://localhost:8765, upload a short clip, edit and approve each
 description, preview the mixed audio, then export the described video.
 
-Pick a model backend in `.env`:
+Pick a model backend in `.env` (`INSTASCRIBE_BACKEND`):
 
-- **OpenAI** (default, best quality) — set `OPENAI_API_KEY`.
-- **Fully local, no key** — `INSTASCRIBE_BACKEND=local`. Install
-  [Ollama](https://ollama.com), pull `qwen2.5vl:7b` + `qwen2.5:7b`, and
-  `pip install -r requirements-local.txt` for local TTS.
-  See [docs/local-models.md](./docs/local-models.md).
+- **OpenAI** (default) — set `OPENAI_API_KEY`.
+- **Claude** — `anthropic`; set `ANTHROPIC_API_KEY` and `pip install -r requirements-providers.txt`.
+- **Gemini** — `gemini`; set `GEMINI_API_KEY` (no extra install).
+- **Fully local, no key** — `local`: install [Ollama](https://ollama.com), pull
+  `qwen2.5vl:7b` + `qwen2.5:7b`, and `pip install -r requirements-local.txt` for
+  local TTS.
 
 Vision, Smart Fill, and TTS each run through a provider interface, so the model
-behind them is a config change, not a code change.
+behind them is a config change, not a code change. Setup and the local-quality
+tradeoff: [docs/local-models.md](./docs/local-models.md).
 
 ## Evaluation and results
 
@@ -129,10 +132,10 @@ The work that made the tool usable lived in failures that only show up in real o
 
 ## Built with
 
-Python 3.12 · Flask · a pluggable model backend — OpenAI (gpt-4.1, gpt-4o-mini,
-tts-1-hd) or fully local (Ollama Qwen2.5-VL + Kokoro) · faster-whisper · silero-vad ·
-ffmpeg · React 19 · Vite · TypeScript · Tailwind · shadcn/ui · TanStack Query ·
-Zustand · deployed on Fly.io.
+Python 3.12 · Flask · a pluggable model backend — OpenAI, Claude, or Gemini, or
+fully local (Ollama Qwen2.5-VL + Kokoro) · faster-whisper · silero-vad · ffmpeg ·
+React 19 · Vite · TypeScript · Tailwind · shadcn/ui · TanStack Query · Zustand ·
+deployed on Fly.io.
 
 ## Project layout
 

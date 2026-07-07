@@ -4,7 +4,7 @@ A human-in-the-loop tool for authoring audio descriptions for video. It drafts a
 description for every scene with AI, lets a person edit and approve each one, and
 mixes the spoken description into the video's natural gaps between dialogue.
 
-[![CI](https://github.com/AndriiArtemenko3/instascribe/actions/workflows/ci.yml/badge.svg)](https://github.com/AndriiArtemenko3/instascribe/actions/workflows/ci.yml)
+[![CI](https://github.com/AndriiArtemenko3/InstaScribe-Audio-Description-Authoring-Pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/AndriiArtemenko3/InstaScribe-Audio-Description-Authoring-Pipeline/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
 > Tested with 10 participants: drafts rated accurate (4.4/5) and useful (4.2/5),

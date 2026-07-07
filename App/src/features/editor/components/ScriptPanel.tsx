@@ -101,7 +101,6 @@ export function ScriptPanel({
 
   useEffect(() => {
     return () => { resetPreview() }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Drop any loaded audio when the scene / voice / speed / text changes so the
@@ -110,7 +109,6 @@ export function ScriptPanel({
   useEffect(() => {
     resetPreview()
     setPreviewError(null)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [previewKey])
 
   if (!scene) {

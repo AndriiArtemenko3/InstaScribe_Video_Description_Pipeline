@@ -706,7 +706,6 @@ function StudyPreviewDialog({ state, videoUrl, projectId, exportId, onClose }: S
                 hears. Tweak any line and render it again.
               </p>
             </div>
-            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
             <video src={videoUrl} controls autoPlay className="w-full rounded-lg bg-black" />
             <div className="flex gap-2">
               {exportId && (

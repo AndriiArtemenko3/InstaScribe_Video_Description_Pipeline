@@ -38,8 +38,9 @@ Keep documentation precise:
   model inference or public-web request in its end-to-end proof;
 - the authenticated investigation workspace is implemented and browser-verified
   with a synthetic, PII-free no-model fixture;
-- live model inference, retrieval, persisted replay, benchmark and deployment are
-  not implemented capabilities;
+- live model inference, retrieval, persisted replay and deployment are not
+  implemented capabilities; the open benchmark harness contains placeholder
+  data only and reports no results;
 - the audio-description API-first beta remains implemented and locally verified,
   not evidence that the investigation product is deployed;
 - the SDK and CLI are source-complete but not yet published to npm;

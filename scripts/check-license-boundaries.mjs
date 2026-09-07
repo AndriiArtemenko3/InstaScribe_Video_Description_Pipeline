@@ -71,6 +71,25 @@ for (const marker of [
   requireText(investigationLicense, marker, `${investigationBase}/LICENSE`);
 }
 
+const benchmarksBase = "packages/benchmarks";
+const benchmarksManifest = read(`${benchmarksBase}/pyproject.toml`);
+const benchmarksLicense = read(`${benchmarksBase}/LICENSE`);
+for (const marker of [
+  'name = "instadescribe-benchmarks"',
+  'requires-python = ">=3.12"',
+  'license = "Apache-2.0"',
+  "dependencies = []",
+]) {
+  requireText(benchmarksManifest, marker, `${benchmarksBase}/pyproject.toml`);
+}
+for (const marker of [
+  "Apache License",
+  "Version 2.0, January 2004",
+  "Copyright 2026 Andrii Artemenko",
+]) {
+  requireText(benchmarksLicense, marker, `${benchmarksBase}/LICENSE`);
+}
+
 function pythonSources(directory) {
   return readdirSync(resolve(repository, directory), { withFileTypes: true }).flatMap((entry) => {
     const path = `${directory}/${entry.name}`;
@@ -92,9 +111,11 @@ const prohibitedCoreImport = new RegExp(
   `(?:from|import)\\s+(?:${prohibitedCoreRoots.join("|")})(?:\\.|\\s|$)`,
   "m",
 );
-for (const path of pythonSources(`${investigationBase}/src`)) {
-  if (prohibitedCoreImport.test(read(path))) {
-    throw new Error(`${path} must not import a BUSL-licensed core module`);
+for (const base of [investigationBase, benchmarksBase]) {
+  for (const path of pythonSources(`${base}/src`)) {
+    if (prohibitedCoreImport.test(read(path))) {
+      throw new Error(`${path} must not import a BUSL-licensed core module`);
+    }
   }
 }
 
@@ -115,6 +136,7 @@ for (const marker of [
   "`packages/sdk/**`",
   "`packages/cli/**`",
   "`packages/investigation-core/**`",
+  "`packages/benchmarks/**`",
   "Apache License 2.0 governs the autonomous investigation baseline",
   "2030-08-29",
   "Versions that were already distributed under MIT remain available under the MIT terms",

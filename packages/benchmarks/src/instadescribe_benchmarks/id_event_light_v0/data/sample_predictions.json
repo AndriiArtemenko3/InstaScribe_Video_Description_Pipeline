@@ -1,0 +1,65 @@
+{
+  "schema_version": "id-event-light-bench-predictions/0",
+  "system": {
+    "name": "hand-written-example",
+    "note": "not a real system; illustrates the report format"
+  },
+  "predictions": [
+    {
+      "id": "pos-001",
+      "event_detected": true,
+      "start_time": 2.1,
+      "end_time": 4.8,
+      "confidence": 0.91
+    },
+    {
+      "id": "pos-002",
+      "event_detected": true,
+      "start_time": 12.0,
+      "end_time": 18.0,
+      "confidence": 0.64
+    },
+    {
+      "id": "pos-003",
+      "event_detected": true,
+      "start_time": null,
+      "end_time": null,
+      "confidence": 0.55
+    },
+    {
+      "id": "pos-004",
+      "event_detected": false,
+      "start_time": null,
+      "end_time": null,
+      "confidence": 0.32
+    },
+    {
+      "id": "neg-001",
+      "event_detected": false,
+      "start_time": null,
+      "end_time": null,
+      "confidence": 0.12
+    },
+    {
+      "id": "neg-002",
+      "event_detected": true,
+      "start_time": 3.0,
+      "end_time": 4.0,
+      "confidence": 0.58
+    },
+    {
+      "id": "hardneg-001",
+      "event_detected": false,
+      "start_time": null,
+      "end_time": null,
+      "confidence": 0.41
+    },
+    {
+      "id": "hardneg-002",
+      "event_detected": true,
+      "start_time": 7.5,
+      "end_time": 9.0,
+      "confidence": 0.62
+    }
+  ]
+}

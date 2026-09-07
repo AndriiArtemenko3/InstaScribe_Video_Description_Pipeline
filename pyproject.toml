@@ -13,6 +13,8 @@ extend-exclude = [
   # Autonomous Apache package: its dedicated Python 3.12 CI job owns the
   # package-local Ruff configuration and prevents root/product assumptions.
   "packages/investigation-core",
+  # Same treatment for the Apache benchmark harnesses.
+  "packages/benchmarks",
 ]
 
 [tool.ruff.lint]

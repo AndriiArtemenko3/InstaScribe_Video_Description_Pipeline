@@ -36,7 +36,7 @@ composite score and a harness too large to audit. v0 stays one skill.
 The evaluator scores a predictions JSON file and never runs a model. A
 hand-written heuristic, a CNN, a tracker, a VLM and the full InstaDescribe
 pipeline are scored identically, which keeps the harness dependency-free and
-makes every future baseline comparison (B0..B6) fair by construction.
+makes every future baseline comparison fair by construction.
 
 ## 6. A new snake_case schema family
 

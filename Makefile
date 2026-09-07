@@ -7,7 +7,9 @@
 	g8-build g8-image-proof g8-memtest smoke-local \
 	g8-api-build g8-api-image-proof g8-acceptance \
 	investigation-core-sync investigation-core-lint investigation-core-test \
-	investigation-core-build investigation-core-check
+	investigation-core-build investigation-core-check \
+	benchmarks-sync benchmarks-lint benchmarks-test \
+	benchmarks-build benchmarks-check
 
 # The CURRENT (G8-rebuilt) production worker image tag — G8 acceptance
 # targets run exactly this image; plain compose keeps the pinned G5 tag.
@@ -18,6 +20,10 @@ G8_API_IMAGE ?= instadescribe-api:g8
 # package tooling from sharing environments or accidentally resolving imports.
 INVESTIGATION_CORE_DIR := packages/investigation-core
 INVESTIGATION_CORE_DIST ?= dist/investigation-core
+
+# Apache-2.0 evaluation benchmark harnesses (placeholder data; no results reported).
+BENCHMARKS_DIR := packages/benchmarks
+BENCHMARKS_DIST ?= dist/benchmarks
 
 # Local compose DSN (placeholder credential, loopback-bound — never production).
 LOCAL_DATABASE_URL ?= postgresql+psycopg://instascribe:local-dev-only@127.0.0.1:5432/instascribe
@@ -77,6 +83,29 @@ investigation-core-build:  ## Build the standalone investigation-core wheel and 
 investigation-core-check: investigation-core-lint investigation-core-test investigation-core-build  ## Full open-core test, package and license-boundary gate
 	$(INVESTIGATION_CORE_DIR)/.venv/bin/python scripts/verify_investigation_core_dist.py \
 		--source $(INVESTIGATION_CORE_DIR) --dist $(INVESTIGATION_CORE_DIST)
+	node scripts/check-license-boundaries.mjs
+
+benchmarks-sync:  ## Sync the locked Python 3.12 environment for the Apache benchmarks package
+	uv sync --directory $(BENCHMARKS_DIR) --locked --extra dev \
+		--python 3.12 --no-python-downloads
+
+benchmarks-lint: benchmarks-sync  ## Ruff-check and format-check the standalone benchmarks package
+	uv run --directory $(BENCHMARKS_DIR) --locked --extra dev \
+		ruff check src tests
+	uv run --directory $(BENCHMARKS_DIR) --locked --extra dev \
+		ruff format --check src tests
+
+benchmarks-test: benchmarks-sync  ## Run the locked benchmarks tests under Python 3.12
+	uv run --directory $(BENCHMARKS_DIR) --locked --extra dev \
+		python -c 'import sys; assert sys.version_info[:2] == (3, 12), sys.version'
+	uv run --directory $(BENCHMARKS_DIR) --locked --extra dev \
+		pytest tests -q
+
+benchmarks-build:  ## Build the standalone benchmarks wheel and sdist under Python 3.12
+	uv build $(BENCHMARKS_DIR) --out-dir $(BENCHMARKS_DIST) \
+		--clear --python 3.12 --no-python-downloads
+
+benchmarks-check: benchmarks-lint benchmarks-test benchmarks-build  ## Full benchmarks test, package and license-boundary gate
 	node scripts/check-license-boundaries.mjs
 
 g1-up:  ## Start the G1 local cloud stack (PostgreSQL + LocalStack + health-only API)

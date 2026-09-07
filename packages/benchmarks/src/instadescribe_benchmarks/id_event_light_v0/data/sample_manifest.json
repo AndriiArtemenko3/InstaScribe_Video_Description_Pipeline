@@ -1,0 +1,87 @@
+{
+  "schema_version": "id-event-light-bench-manifest/0",
+  "name": "ID Event Light Bench v0 — sample manifest",
+  "notes": "PLACEHOLDER DATA ONLY. Every video path is a placeholder for a rights-cleared clip to be added manually later; validate with --skip-video-check until real clips exist. This file supports harness development and demos. No accuracy, calibration, latency or memory result derived from it may be reported.",
+  "items": [
+    {
+      "id": "pos-001",
+      "video": "videos/PLACEHOLDER_pos_001.mp4",
+      "query": "Does a person enter the vehicle?",
+      "label": true,
+      "start_time": 2.0,
+      "end_time": 5.0,
+      "difficulty": "positive",
+      "notes": "PLACEHOLDER — replace with a real rights-cleared clip"
+    },
+    {
+      "id": "pos-002",
+      "video": "videos/PLACEHOLDER_pos_002.mp4",
+      "query": "Does a person cross the street?",
+      "label": true,
+      "start_time": 10.0,
+      "end_time": 14.0,
+      "difficulty": "positive",
+      "notes": "PLACEHOLDER — replace with a real rights-cleared clip"
+    },
+    {
+      "id": "pos-003",
+      "video": "videos/PLACEHOLDER_pos_003.mp4",
+      "query": "Does a door open?",
+      "label": true,
+      "start_time": 1.5,
+      "end_time": 3.0,
+      "difficulty": "positive",
+      "notes": "PLACEHOLDER — replace with a real rights-cleared clip"
+    },
+    {
+      "id": "pos-004",
+      "video": "videos/PLACEHOLDER_pos_004.mp4",
+      "query": "Does a cyclist pass the camera?",
+      "label": true,
+      "start_time": 6.0,
+      "end_time": 9.5,
+      "difficulty": "positive",
+      "notes": "PLACEHOLDER — replace with a real rights-cleared clip"
+    },
+    {
+      "id": "neg-001",
+      "video": "videos/PLACEHOLDER_neg_001.mp4",
+      "query": "Does a person enter the vehicle?",
+      "label": false,
+      "start_time": null,
+      "end_time": null,
+      "difficulty": "negative",
+      "notes": "PLACEHOLDER — clip contains no vehicle at all"
+    },
+    {
+      "id": "neg-002",
+      "video": "videos/PLACEHOLDER_neg_002.mp4",
+      "query": "Does a dog run through the frame?",
+      "label": false,
+      "start_time": null,
+      "end_time": null,
+      "difficulty": "negative",
+      "notes": "PLACEHOLDER — clip contains no animals"
+    },
+    {
+      "id": "hardneg-001",
+      "video": "videos/PLACEHOLDER_hardneg_001.mp4",
+      "query": "Does a person enter the vehicle?",
+      "label": false,
+      "start_time": null,
+      "end_time": null,
+      "difficulty": "hard_negative",
+      "notes": "PLACEHOLDER — person approaches the vehicle and opens the door but does not enter"
+    },
+    {
+      "id": "hardneg-002",
+      "video": "videos/PLACEHOLDER_hardneg_002.mp4",
+      "query": "Does a person cross the street?",
+      "label": false,
+      "start_time": null,
+      "end_time": null,
+      "difficulty": "hard_negative",
+      "notes": "PLACEHOLDER — person steps off the curb, then turns back without crossing"
+    }
+  ]
+}

@@ -217,7 +217,7 @@ is not part of this migration.
 |---|---|---|
 | Cloud Core v0.1 | Historical deployment evidence only | Legacy Vite + shared portfolio token + FastAPI/PostgreSQL/S3/SQS; no current availability or support claim |
 | API-first B2B beta | Implemented and locally verified | Next.js/BFF, Cognito, organizations, service keys, Integration API, SDK/CLI, full review/render/delivery and webhooks |
-| Video-investigation foundation | Implemented and fixture-verified in source | Browser API, durable evidence domain, dedicated queue, fenced worker, strict isolated result boundary and authenticated analyst workspace; no live model, retrieval, replay, benchmark or deployment |
+| Video-investigation foundation | Implemented and fixture-verified in source | Browser API, durable evidence domain, dedicated queue, fenced worker, strict isolated result boundary and authenticated analyst workspace; no live model, retrieval, replay, benchmark results or deployment |
 | Isolated beta AWS stack | Defined but not cut over | Live restore, identity, upload, webhook and real-provider canaries remain release gates |
 | npm SDK/CLI | Source complete, unpublished | Publication requires an approved immutable tag and post-publish tarball E2E |
 

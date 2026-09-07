@@ -70,6 +70,23 @@ uv run --locked --extra dev pytest tests -q
 
 Both CLIs accept `--json` for machine-readable output.
 
+## Baselines
+
+`baselines/naive_visual.py` is the first complete solver: a deliberately
+primitive, query-agnostic appearance-change detector (ffmpeg grayscale
+sampling → hand-written Sobel edges → grid features → cosine change →
+sigmoid → threshold). It establishes the floor every later system must beat.
+Its thresholds are uncalibrated placeholders and no result produced with them
+is reported anywhere.
+
+```bash
+uv run --locked --extra dev python -m instadescribe_benchmarks.id_event_light_v0.baselines.naive_visual \
+    --manifest <manifest.json> --out predictions.json
+```
+
+The manifest's video files must exist (the solver reads pixels); the output is
+scored with the evaluator above.
+
 ## Prediction format
 
 The evaluator is model-agnostic: it scores a JSON file, never runs a model. A

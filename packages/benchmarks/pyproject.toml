@@ -23,6 +23,15 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
+# Runtimes for live CLIP ONNX inference in the E002 retrieve solver. The
+# package core stays dependency-free; these are imported lazily and only at
+# model-load time.
+clip = [
+  "numpy>=1.26",
+  "onnxruntime>=1.20",
+  "pillow>=10",
+  "tokenizers>=0.20",
+]
 dev = [
   "pytest>=8",
   "ruff>=0.6",

@@ -3,6 +3,34 @@
 Tiny, readable evaluation benchmarks for InstaDescribe's video-intelligence
 direction. One track exists today: **ID Event Light Bench v0**.
 
+## Status: Data collection in progress
+
+The benchmark/evaluator, the E001 naive visual baseline, the E002
+retrieve-only CLIP solver, live image↔text inference verification, and the
+dataset construction/freeze tooling are implemented. The rights-cleared
+evaluation dataset is currently being collected.
+
+Benchmark-quality results are intentionally not reported yet: the dataset
+will be fully annotated, reviewed, split, and frozen before E001 or E002 is
+run on candidate benchmark clips. The dataset is constructed before any
+solver inspection to avoid benchmark leakage and post-hoc dataset selection;
+E001/E002 evaluation begins only after `DATASET_FREEZE_V1`.
+
+- [x] Benchmark schema + evaluator
+- [x] E001 naive visual baseline
+- [x] E002 retrieve-only CLIP solver
+- [x] Live image↔text inference verification
+- [x] Dataset collection/provenance/freeze tooling
+- [ ] Rights-cleared 48-item dataset
+- [ ] DATASET_FREEZE_V1
+- [ ] Frozen E001 vs E002 evaluation
+- [ ] E003 semantic verification
+
+Next milestone: collect, annotate, review and freeze the 48-item dataset
+(see `DATASET_COLLECTION.md`). After `DATASET_FREEZE_V1`: dev-only
+configuration selection, one frozen E001/E002 test comparison, failure
+analysis, and a GO/NO-GO decision for E003.
+
 ## Purpose
 
 ID Event Light Bench v0 evaluates whether a system can detect and temporally
@@ -46,8 +74,20 @@ src/instadescribe_benchmarks/id_event_light_v0/
 ├── metrics.py            # accuracy/precision/recall/F1, temporal IoU — formulas visible
 ├── evaluator.py          # scoring rules + CLI
 ├── validate_manifest.py  # manifest validation CLI
-└── data/                 # placeholder sample manifest + predictions
+├── data/                 # placeholder sample manifest + predictions
+├── baselines/            # E001 naive visual baseline (query-agnostic floor)
+├── retrieve/             # E002 retrieve-only CLIP solver
+└── dataset/              # model-blind dataset construction/freeze tooling
 ```
+
+## Model artifacts
+
+The E002 solver supports local CLIP inference via **user-supplied,
+digest-pinned model artifacts** (an optional `clip` extra provides the
+runtimes; the package core stays dependency-free). The repository ships no
+model weights. The currently tested Xenova CLIP export is used for local
+development/evaluation only; its redistribution/production licence status
+remains unresolved in this project.
 
 ## How to run
 

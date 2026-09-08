@@ -6,3 +6,10 @@ __pycache__/
 *.py[cod]
 dist/
 *.egg-info/
+# Model artifacts are user-supplied and digest-pinned; never committed.
+*.onnx
+tokenizer.json
+# Local dataset workspaces / smoke outputs (canonically kept outside the repo).
+dataset-workspace/
+predictions*.json
+solver*.toml

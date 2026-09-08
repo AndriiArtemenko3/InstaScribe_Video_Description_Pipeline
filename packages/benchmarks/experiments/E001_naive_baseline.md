@@ -1,6 +1,8 @@
-# E001 — naive visual baseline (proposal)
+# E001 — naive visual baseline
 
-Status: proposed, not scheduled.
+Status: implemented — see
+`src/instadescribe_benchmarks/id_event_light_v0/baselines/naive_visual.py`
+(deviations from this proposal are documented in that module's docstring).
 
 ## Goal
 

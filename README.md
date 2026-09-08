@@ -43,7 +43,7 @@ domain, not a relabeling of the retained `audio_description` pipeline.
 | Live local multimodal inference | Gated next | Loopback adapter code is not an accepted end-to-end capability; the worker fails closed until a parent-validated proposal handshake and runtime/resource gates are complete |
 | Connected retrieval and geometric verification | Not implemented | No crop leaves the local boundary and no connected result can be presented as verified evidence |
 | Persisted replay | Not implemented | A committed deterministic fixture is test infrastructure, not persisted trace replay |
-| Investigation benchmark | Harness only; results not reported | An open evaluation harness with placeholder data exists (`packages/benchmarks`); there are no public accuracy, calibration, retrieval, latency or memory claims |
+| Investigation benchmark | Data collection in progress; results not reported | The evaluation harness, two baseline solvers and model-blind dataset tooling exist (`packages/benchmarks`); the rights-cleared dataset is being collected and there are no public accuracy, calibration, retrieval, latency or memory claims |
 
 ## Implemented investigation flow
 

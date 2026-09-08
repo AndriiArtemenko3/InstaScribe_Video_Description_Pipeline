@@ -106,6 +106,28 @@ def _sha256_file(path: Path) -> str:
 
 
 @dataclass(frozen=True, slots=True)
+class TokenizerArtifact:
+    """The tokenizer file sits outside the two-entry encoder pair by design,
+    but its provenance is pinned and verified the same way."""
+
+    path: Path
+    expected_digest: str
+
+    def __post_init__(self) -> None:
+        digest = self.expected_digest.lower()
+        if len(digest) != _DIGEST_HEX_LENGTH or any(c not in "0123456789abcdef" for c in digest):
+            raise ValueError("tokenizer expected_digest must be a 64-character hex sha256")
+
+    def verify_file(self) -> None:
+        actual = _sha256_file(self.path)
+        if actual != self.expected_digest.lower():
+            raise ValueError(
+                f"tokenizer digest mismatch for {self.path}: "
+                f"expected {self.expected_digest}, found {actual}"
+            )
+
+
+@dataclass(frozen=True, slots=True)
 class RetrieveSolverConfig:
     """Every scalar the E002 solver uses.
 
@@ -160,17 +182,18 @@ _KNOWN_MODEL_KEYS = frozenset(
         "text_path",
         "text_digest",
         "tokenizer_path",
+        "tokenizer_digest",
     }
 )
 
 
 def load_solver_toml(
     path: Path,
-) -> tuple[RetrieveSolverConfig, PairedEncoderProvenance, Path]:
+) -> tuple[RetrieveSolverConfig, PairedEncoderProvenance, TokenizerArtifact]:
     """Parse the CLI's TOML config: [solver] scalars and [models] artifacts.
 
-    Returns (config, provenance, tokenizer_path). Unknown keys fail closed —
-    a typo must never silently fall back to a default.
+    Returns (config, provenance, tokenizer artifact). Unknown keys fail
+    closed — a typo must never silently fall back to a default.
     """
 
     try:
@@ -214,4 +237,8 @@ def load_solver_toml(
             export_revision=revision,
         ),
     )
-    return config, provenance, Path(models_raw["tokenizer_path"])
+    tokenizer = TokenizerArtifact(
+        path=Path(models_raw["tokenizer_path"]),
+        expected_digest=models_raw["tokenizer_digest"],
+    )
+    return config, provenance, tokenizer

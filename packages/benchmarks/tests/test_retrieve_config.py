@@ -118,13 +118,31 @@ vision_digest = "{"a" * 64}"
 text_path = "{text}"
 text_digest = "{"b" * 64}"
 tokenizer_path = "{tokenizer}"
+tokenizer_digest = "{"c" * 64}"
 '''
     )
-    config, provenance, tokenizer_path = load_solver_toml(config_path)
+    config, provenance, tokenizer_artifact = load_solver_toml(config_path)
     assert config.smoothing_width == 5
     assert provenance.vision.expected_digest == "a" * 64
     assert provenance.text.expected_digest == "b" * 64
-    assert tokenizer_path == tokenizer
+    assert tokenizer_artifact.path == tokenizer
+    assert tokenizer_artifact.expected_digest == "c" * 64
+
+
+def test_tokenizer_artifact_digest_verification(tmp_path: Path) -> None:
+    import hashlib as _hashlib
+
+    from instadescribe_benchmarks.id_event_light_v0.retrieve.config import TokenizerArtifact
+
+    path = tmp_path / "tokenizer.json"
+    path.write_bytes(b"tokenizer-bytes")
+    good = TokenizerArtifact(
+        path=path, expected_digest=_hashlib.sha256(b"tokenizer-bytes").hexdigest()
+    )
+    good.verify_file()
+    bad = TokenizerArtifact(path=path, expected_digest="0" * 64)
+    with pytest.raises(ValueError, match="tokenizer digest mismatch"):
+        bad.verify_file()
 
 
 def test_load_solver_toml_rejects_unknown_keys(tmp_path: Path) -> None:

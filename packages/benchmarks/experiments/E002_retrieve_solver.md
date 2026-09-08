@@ -1,8 +1,9 @@
 # E002 — retrieve-only solver
 
-Status: implemented — see `src/instadescribe_benchmarks/id_event_light_v0/retrieve/`.
-No benchmark-quality claim exists for it yet, and the verification rung (E003)
-has NOT started.
+Status: implemented and **live cross-modal inference verified**; benchmark
+quality still unmeasured and untuned. See
+`src/instadescribe_benchmarks/id_event_light_v0/retrieve/`. The verification
+rung (E003) has NOT started.
 
 ## Algorithm
 
@@ -73,15 +74,56 @@ Nothing is downloaded automatically and no weights are committed. Runtimes
 extra and are imported lazily at model-load time; the package core remains
 dependency-free.
 
-- Vision tower: `Xenova/clip-vit-base-patch32` revision `d15189d7…`,
-  `onnx/vision_model.onnx`, sha256 `fd6e1402…` — present in the local HF
-  cache; **live inference verified** (512-d, unit-normalized, deterministic).
-- Text tower (`onnx/text_model.onnx`) and `tokenizer.json` from the same
-  revision — **absent locally; live text inference NOT verified.** Manual
-  fetch, matching existing repo practice:
-  `huggingface-cli download Xenova/clip-vit-base-patch32 onnx/text_model.onnx tokenizer.json --revision d15189d7028b43f1d3e65039190477f6af591c2a`
-  then pin its sha256 in the solver TOML. The export's licence remains
-  unresolved (docs/investigation-architecture.md) and applies to both towers.
+All three artifacts of the pinned export are now present locally (setup-time
+acquisition only — the solver itself performs no network access):
+
+`huggingface-cli download Xenova/clip-vit-base-patch32 onnx/text_model.onnx tokenizer.json --revision d15189d7028b43f1d3e65039190477f6af591c2a`
+
+The export's licence remains **unresolved** (docs/investigation-architecture.md)
+and applies to all three artifacts: suitable for local development and
+evaluation only; nothing may ship or be baked into images until resolved.
+
+## Live cross-modal verification (2026-09-08)
+
+- Model family: CLIP ViT-B/32; export `Xenova/clip-vit-base-patch32`, pinned
+  revision `d15189d7028b43f1d3e65039190477f6af591c2a`.
+- Artifacts (each verified against its OWN sha256; the two tower digests are
+  never compared to each other):
+  - `onnx/vision_model.onnx` —
+    `fd6e1402a588279d1723c7534d4bcba5bc0b14b47dfab0e46f8c47b8270d7d40`
+  - `onnx/text_model.onnx` —
+    `3f6571f5bad13a97c469c1622e1cfc4d9aef78b79fdbfcff804ca357bfada8cc`
+  - `tokenizer.json` —
+    `f7f3b7af117d467b58374797691a6438d3e6b9e9cef800dfd5dced7f697a90cd`
+- Runtimes: onnxruntime 1.28.x (CPU EP, 1 thread), `tokenizers` 0.23.x, both
+  from the optional `clip` extra.
+- Tokenizer contract observed on the real artifact: BOS `<|startoftext|>` id
+  49406, EOS `<|endoftext|>` id 49407, exactly 77 ids per encoding, EOS-padded
+  tail, deterministic truncation of overlong queries — matching the
+  implemented adapter with **no code change required**.
+- Text ONNX contract observed: single input `input_ids` (int64,
+  [batch, sequence]); no attention_mask input on this export (the provider's
+  optional-mask handling simply doesn't send one); output `text_embeds`
+  (float32, [batch, 512]).
+- Text embeddings: 512-d, all finite, unit norm after provider normalization,
+  bit-identical on repeat inputs. Vision under the same paired config: 512-d,
+  finite, unit norm; dimensions equal across towers.
+- Cross-modal execution verified: real image and text vectors share the space
+  and unit-vector dot products execute correctly; a controlled sanity check
+  ordered related above unrelated pairs (engineering smoke only — explicitly
+  NOT a model-quality or benchmark claim).
+- S1→S2 smoke on a generated clip: 8 frames, dim 512, finite curve, mean
+  contrast exactly 0. Note: with the placeholder `smoothing_width=21` wider
+  than an 8-frame clip, the truncated box mean flattens the curve — expected
+  boundary behavior, recorded, not tuned.
+- Full CLI smoke (`retrieve.solve` with the real TOML): S0–S3+S5 ran end to
+  end on generated non-benchmark clips; the predictions JSON passed the strict
+  loader and evaluator mechanics; the `system` block carried the family,
+  revision, both tower digests, and the tokenizer file + digest. The smoke
+  outcome is mechanics only, not an accuracy result.
+- **No hyperparameters were changed or tuned at any point**, and **no
+  benchmark-quality claim exists** — that still awaits real rights-cleared
+  clips and a defined dev split.
 
 ## Tests
 

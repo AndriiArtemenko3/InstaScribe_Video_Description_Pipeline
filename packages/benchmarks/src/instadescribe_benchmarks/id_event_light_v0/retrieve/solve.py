@@ -34,7 +34,12 @@ from typing import Protocol
 from ..baselines.naive_visual import sigmoid
 from ..schema import PREDICTIONS_SCHEMA_VERSION, BenchmarkItem, load_manifest
 from .clip_onnx import OnnxClipTextEmbeddingProvider, OnnxClipVisionEmbeddingProvider
-from .config import PairedEncoderProvenance, RetrieveSolverConfig, load_solver_toml
+from .config import (
+    PairedEncoderProvenance,
+    RetrieveSolverConfig,
+    TokenizerArtifact,
+    load_solver_toml,
+)
 from .curve import FrameEmbedding, build_score_curve
 from .proposals import TemporalProposal, best_proposal
 from .sampling import probe_duration_s, sample_frames
@@ -119,6 +124,7 @@ def run(
     vision: VisionEmbedder,
     text: TextEmbedder,
     provenance: PairedEncoderProvenance | None,
+    tokenizer: TokenizerArtifact | None = None,
 ) -> int:
     """Solve every manifest item and write the predictions document."""
 
@@ -156,9 +162,14 @@ def run(
         models = {
             "model_family": provenance.model_family,
             "export_revision": provenance.export_revision,
+            "vision_file": provenance.vision.path.name,
             "vision_digest": provenance.vision.expected_digest,
+            "text_file": provenance.text.path.name,
             "text_digest": provenance.text.expected_digest,
         }
+        if tokenizer is not None:
+            models["tokenizer_file"] = tokenizer.path.name
+            models["tokenizer_digest"] = tokenizer.expected_digest
 
     document = {
         "schema_version": PREDICTIONS_SCHEMA_VERSION,
@@ -202,9 +213,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        config, provenance, tokenizer_path = load_solver_toml(args.config)
+        config, provenance, tokenizer_artifact = load_solver_toml(args.config)
         provenance.verify_files()  # each file against its OWN pinned digest
-        tokenizer = ClipTokenizerAdapter(tokenizer_path)
+        tokenizer_artifact.verify_file()
+        tokenizer = ClipTokenizerAdapter(tokenizer_artifact.path)
         vision = OnnxClipVisionEmbeddingProvider(provenance.vision.path)
         text = OnnxClipTextEmbeddingProvider(provenance.text.path, tokenize=tokenizer)
         count = run(
@@ -214,6 +226,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             vision=vision,
             text=text,
             provenance=provenance,
+            tokenizer=tokenizer_artifact,
         )
     except ValueError as error:
         print(f"error: {error}", file=sys.stderr)

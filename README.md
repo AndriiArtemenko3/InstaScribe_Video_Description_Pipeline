@@ -27,6 +27,33 @@ challenge and finalize.
 [Security](./SECURITY.md) ·
 [Engineering history](./docs/engineering-history.md)
 
+## Why this repository exists — and how it got here
+
+The project began as a video-description product: upload a video, get
+natural-language scene descriptions — audio description for people who cannot
+see the screen. That version shipped, first as a small deployed browser tool
+(Cloud Core v0.1) and then as an organization-scoped API product with SDKs, a
+human review step and rendered deliverables. It still exists in this
+repository as a retained workflow.
+
+Building it surfaced a harder question. A description of a video is only
+useful if you can trust it — and for anything beyond accessibility, such as
+checking where footage came from or whether a claimed event actually
+happened, "the model said so" is not good enough. That is the sense of the
+pivot: rather than relabeling the description pipeline, the repository added
+a parallel track — **observable video intelligence** — where the output is
+not fluent text but evidence an analyst can inspect, challenge and overrule.
+Every hypothesis carries its sources, every step is recorded, and nothing
+calls a live model or the public web until that path has been explicitly
+earned and gated.
+
+The current stage applies the same standard to capability itself: before
+claiming the system can answer "did this event happen in this footage?", the
+measurement is being built first — a small, readable benchmark, two baseline
+solvers, and a controlled evaluation dataset collected before any model is
+allowed to see it (see [`packages/benchmarks`](./packages/benchmarks/README.md)).
+Claims come after the numbers, not before.
+
 ## What is implemented
 
 InstaDescribe now has two explicit workflows. `video_investigation` is a parallel
